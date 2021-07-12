@@ -1,0 +1,15 @@
+{
+  "name": "twcatalyst-permissions",
+  "version": "1.0.0",
+  "description": "Grant permissions to teams in organizations",
+  "main": "granter.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "RahilRehan",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/rest": "^18.6.7",
+    "request": "^2.88.2"
+  }
+}
