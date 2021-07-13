@@ -1,5 +1,6 @@
 const { Octokit } = require("@octokit/rest");
 const express = require("express")
+const cors = require("cors")
 
 const app = express()
 require('dotenv').config()
@@ -19,7 +20,7 @@ const getUserIdFromUserName = async (userName) => {
         return Number(response.data.id)
     }
     catch(err){
-        console.log(err.response.status, err.response.data)
+        return err
     }
 } 
 
@@ -27,18 +28,13 @@ const getUserIdFromUserName = async (userName) => {
 const getAllTeams = async () => {
     try{
         const response = await octokit.request(`GET /orgs/${ORGANIZATION}/teams`)
-        const teams = response.data
-        console.table(
-            teams.map(team => {
-                return {
-                "Team": team.id,
-                "Name": team.name
-                }
-            })
-        )
+        const teams = response.data.map(team => {
+            return {Name: team.name, Id: team.id}
+        })
+        return teams
     }
     catch(err){
-        console.log(err.response.status, err.response.data)
+        return err
     }
 }
 
@@ -49,26 +45,46 @@ const giveTeamsAccess = async (userId, team_ids) => {
             invitee_id: userId,
             team_ids : team_ids
         })
-        console.log(response.data)
+        response
     }
     catch(err){
-        console.log(err.response.status, err.response.data)
+        return err
     }
 }
 
-//bulk add users to catalyst
-addMultipleUsersToCatalyst = () => {
-    const userIds = [58245868] //list of users
-    const teamIds = [4064135] //list of teams to give access to
-    userIds.forEach(userId => {
-        giveTeamsAccess(userId, teamIds)
-    })
+const getTeamIds = async (teams) => {
+    try{
+        const teamIds = []
+        for(let team of teams){
+            let resp = await octokit.request(`GET /orgs/${ORGANIZATION}/teams/${team}`)
+            teamIds.push(Number(resp.data.id))
+        }
+        return teamIds
+    }catch(err){
+        return err
+    }
 }
 
 //REST API
-app.get('/addUser', async (req, res) => {
-    const userId = await getUserIdFromUserName(req.query.username)
-    giveTeamsAccess(userId, [Number(process.env.TW_EXPLORER_ID)])
+app.use(express.json())
+app.use(cors())
+
+app.post('/access', async (req, res) => {
+    let users = req.body.usernames
+    let teamIdsResponse = await getTeamIds(req.body.teams)
+    teamIdsResponse = teamIdsResponse.length==0 ? [Number(process.env.TW_EXPLORER_ID)] : teamIdsResponse
+    responses = []
+    for(let user of users){
+        let userIdResponse = await getUserIdFromUserName(user)
+        let teamAccessResponse = await giveTeamsAccess(userIdResponse, teamIdsResponse)
+        responses.push(teamAccessResponse.response.data)
+    }
+    res.send(responses)
+})
+
+app.get('/teams', async (req, res) => {
+    const teams = await getAllTeams()
+    res.send(teams)
 })
 
 app.listen(PORT, () => console.log(`Giving access from ${PORT}`))
