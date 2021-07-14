@@ -71,13 +71,13 @@ app.use(cors())
 
 app.post('/access', async (req, res) => {
     let users = req.body.usernames
-    let teamIdsResponse = await getTeamIds(req.body.teams)
-    teamIdsResponse = teamIdsResponse.length==0 ? [Number(process.env.TW_EXPLORER_ID)] : teamIdsResponse
+    let teamsIds = await getTeamIds(req.body.teams)
+    teamsIds = teamsIds.length==0 ? [Number(process.env.TW_EXPLORER_ID)] : teamsIds
     responses = []
     for(let user of users){
-        let userIdResponse = await getUserIdFromUserName(user)
-        let teamAccessResponse = await giveTeamsAccess(userIdResponse, teamIdsResponse)
-        responses.push(teamAccessResponse.response.data)
+        let userId = await getUserIdFromUserName(user)
+        let teamAccessResponse = await giveTeamsAccess(userId, teamsIds)
+        responses.push({status:teamAccessResponse.status, body:teamAccessResponse.response.data})
     }
     res.send(responses)
 })
