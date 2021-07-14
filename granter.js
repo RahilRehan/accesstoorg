@@ -27,7 +27,6 @@ const getUserIdFromUserName = async (userName, oktokit) => {
         return err
     }
 } 
-
 //get all teams associated with github token
 const getAllTeams = async () => {
     try{
