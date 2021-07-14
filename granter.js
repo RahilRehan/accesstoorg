@@ -5,16 +5,20 @@ const cors = require("cors")
 const app = express()
 require('dotenv').config()
 
-const octokit = new Octokit({
-    auth: process.env.CATALYST_ADMIN_TOKEN
-});
+let oktokit
+
+const getOctokit = async (token) => {
+    return await new Octokit({
+        auth: token
+    })
+}
 
 const ORGANIZATION = process.env.ORGANIZATION
 const PORT = 9999 || process.env.PORT
 
 
 // retrieve id from github username, useful when adding user to teams via github api
-const getUserIdFromUserName = async (userName) => {
+const getUserIdFromUserName = async (userName, oktokit) => {
     try{
         const response = await octokit.request(`GET /users/${userName}`)
         return Number(response.data.id)
@@ -70,6 +74,8 @@ app.use(express.json())
 app.use(cors())
 
 app.post('/access', async (req, res) => {
+    ghtoken = req.headers.authorization.split(" ")[1]
+    octokit = await getOctokit(ghtoken)
     let users = req.body.usernames
     let teamsIds = await getTeamIds(req.body.teams)
     teamsIds = teamsIds.length==0 ? [Number(process.env.TW_EXPLORER_ID)] : teamsIds
@@ -83,6 +89,8 @@ app.post('/access', async (req, res) => {
 })
 
 app.get('/teams', async (req, res) => {
+    ghtoken = req.headers.authorization.split(" ")[1]
+    octokit = await getOctokit(ghtoken)
     const teams = await getAllTeams()
     res.send(teams)
 })
