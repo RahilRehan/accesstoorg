@@ -41,12 +41,12 @@ const getAllTeams = async () => {
     }
 }
 
-// gives access to userid with given teams array
-const giveTeamsAccess = async (userId, team_ids) => {
+// gives access to email with given teams array
+const giveTeamsAccess = async (email, teamIds) => {
     try{
         const response = await octokit.request(`POST /orgs/${ORGANIZATION}/invitations`, {
-            invitee_id: userId,
-            team_ids : team_ids
+            email: email,
+            team_ids : teamIds
         })
         response
     }
@@ -75,13 +75,13 @@ app.use(cors())
 app.post('/access', async (req, res) => {
     ghtoken = req.headers.authorization.split(" ")[1]
     octokit = await getOctokit(ghtoken)
-    let users = req.body.usernames
+    let emails = req.body.emails
     let teamsIds = await getTeamIds(req.body.teams)
     teamsIds = teamsIds.length==0 ? [Number(process.env.TW_EXPLORER_ID)] : teamsIds
     responses = []
-    for(let user of users){
-        let userId = await getUserIdFromUserName(user)
-        let teamAccessResponse = await giveTeamsAccess(userId, teamsIds)
+    for(let email of emails){
+        let teamAccessResponse = await giveTeamsAccess(email, teamsIds)
+        console.log(teamAccessResponse);
         responses.push({status:teamAccessResponse.status, body:teamAccessResponse.response.data})
     }
     res.send(responses)
